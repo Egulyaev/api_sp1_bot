@@ -14,6 +14,7 @@ CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 logging.basicConfig(level=logging.DEBUG)
 
+
 def parse_homework_status(homework):
     homework_name = homework['homework_name']
     if homework['status'] == 'rejected':
