@@ -1,8 +1,10 @@
+import json
 import logging
 import os
 import time
 
 import requests
+import telegram
 from dotenv import load_dotenv
 from telegram import Bot
 
@@ -12,6 +14,10 @@ PRAKTIKUM_TOKEN = os.getenv('PRAKTIKUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 API_URL = 'https://praktikum.yandex.ru/api/user_api/homework_statuses/'
+STATUS = {'reviewing': 'Работа взята в ревью',
+          'approved': 'Ревьюеру всё понравилось,'
+                      ' можно приступать к следующему уроку.',
+          'rejected': 'К сожалению в работе нашлись ошибки.'}
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -22,32 +28,30 @@ logging.basicConfig(
 
 
 def parse_homework_status(homework):
-    status = {'reviewing': 'Работа взята в ревью',
-              'approved': ('Ревьюеру всё понравилось,'
-                           ' можно приступать к следующему уроку.'),
-              'rejected': 'К сожалению в работе нашлись ошибки.'}
     try:
-        verdict = status[homework['status']]
+        verdict = STATUS[homework['status']]
         homework_name = homework['homework_name']
-    except Exception as e:
-        logging.error('При разборе статуса домашки'
-                      f' произошла ошибка: {e}')
+    except KeyError:
+        logging.error('Ошибка значения ключа')
+        return
     return f'У вас проверили работу "{homework_name}"!\n\n{verdict}'
 
 
 def get_homework_statuses(current_timestamp):
     headers = {'Authorization': f'OAuth {PRAKTIKUM_TOKEN}'}
-    params = {'from_date': current_timestamp}
+    params = {'from_date': 0}
     try:
         homework_statuses = requests.get(
             API_URL,
             headers=headers,
             params=params
         )
-    except Exception as e:
-        logging.error('При запросе статуса домашки'
-                      f' произошла ошибка: {e}')
-    return homework_statuses.json()
+    except requests.exceptions.ConnectionError:
+        logging.error('Ошибка соединения с сервером')
+    try:
+        return homework_statuses.json()
+    except json.decoder.JSONDecodeError:
+        logging.error('Ошибка декодирования JSON')
 
 
 def send_message(message, bot_client):
@@ -78,9 +82,10 @@ def main():
             logging.error(f'Бот столкнулся с ошибкой: {e}')
             try:
                 send_message(f'Бот столкнулся с ошибкой: {e}', bot_client)
-            except Exception as error:
-                logging.error('При отправке сообщения об ошибке,'
-                              f' произошла ошибка: {error}')
+            except telegram.error.Unauthorized:
+                logging.error('Ошибка авторизации бота')
+            except telegram.error.BadRequest:
+                logging.error('Ошибка запроса телеграмм')
             time.sleep(5)
 
 
