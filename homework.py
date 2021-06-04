@@ -33,7 +33,7 @@ def parse_homework_status(homework):
         homework_name = homework['homework_name']
     except KeyError:
         logging.error('Ошибка значения ключа')
-        return
+        return 'Ошибка значения ключа'
     return f'У вас проверили работу "{homework_name}"!\n\n{verdict}'
 
 
@@ -48,10 +48,12 @@ def get_homework_statuses(current_timestamp):
         )
     except requests.exceptions.ConnectionError:
         logging.error('Ошибка соединения с сервером')
+        raise requests.exceptions.ConnectionError
     try:
         return homework_statuses.json()
     except json.decoder.JSONDecodeError:
         logging.error('Ошибка декодирования JSON')
+        raise json.decoder.JSONDecodeError
 
 
 def send_message(message, bot_client):
