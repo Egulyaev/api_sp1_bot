@@ -6,7 +6,6 @@ import time
 import requests
 import telegram
 from dotenv import load_dotenv
-from requests import RequestException
 from telegram import Bot
 
 load_dotenv()
