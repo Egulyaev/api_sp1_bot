@@ -47,7 +47,7 @@ def get_homework_statuses(current_timestamp):
             headers=headers,
             params=params
         )
-    except RequestException as e:
+    except requests.exceptions.RequestException as e:
         logging.error('Ошибка соединения с сервером')
         raise e
     try:
