@@ -6,6 +6,7 @@ import time
 import requests
 import telegram
 from dotenv import load_dotenv
+from requests import RequestException
 from telegram import Bot
 
 load_dotenv()
@@ -46,14 +47,14 @@ def get_homework_statuses(current_timestamp):
             headers=headers,
             params=params
         )
-    except requests.exceptions.ConnectionError:
+    except RequestException as e:
         logging.error('Ошибка соединения с сервером')
-        raise requests.exceptions.ConnectionError
+        raise e
     try:
         return homework_statuses.json()
-    except json.decoder.JSONDecodeError:
+    except json.decoder.JSONDecodeError as e:
         logging.error('Ошибка декодирования JSON')
-        raise json.decoder.JSONDecodeError
+        raise e
 
 
 def send_message(message, bot_client):
@@ -69,8 +70,8 @@ def main():
             new_homework = get_homework_statuses(current_timestamp)
             if new_homework.get('homeworks'):
                 send_message(
-                    parse_homework_status
-                    (new_homework.get('homeworks')[0]),
+                    parse_homework_status(
+                        new_homework.get('homeworks')[0]),
                     bot_client
                 )
                 logging.info('Отправлено сообщение')
